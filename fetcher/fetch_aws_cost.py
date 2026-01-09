@@ -17,7 +17,7 @@ load_dotenv()
 def get_aws_cost_summary(time_period, metrics, group_by, region='ca-central-1',granularity='DAILY'):
     aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
     aws_secret_key =  os.getenv("AWS_SECRET_ACCESS_KEY")
-    aws_region = os.getenv("AWS_REGION", region)    
+    aws_region = os.getenv("AWS_REGION", region)   
     try:
         if aws_access_key and aws_secret_key:
             client = boto3.client('ce',
@@ -77,12 +77,16 @@ def store_aws_cost_data(json_data):
         create_table_query = """
         CREATE TABLE IF NOT EXISTS aws_costs (
             id SERIAL PRIMARY KEY,
+            usage_date DATE NOT NULL,
+            linked_account_id VARCHAR(12),
+            region VARCHAR(50),
             service_name TEXT,
             amortized_cost NUMERIC,
             blended_cost NUMERIC,
             unblended_cost NUMERIC,
             usage_quantity NUMERIC,
-            unit TEXT
+            unit TEXT,
+            UNIQUE (usage_date, linked_account_id, region, service_name)
         );
         """
         cur = conn.cursor()
@@ -94,22 +98,56 @@ def store_aws_cost_data(json_data):
     # --- Helper: Insert data ---
     def insert_cost_data(conn, data):
         cur = conn.cursor()
-        for entry in data:
-            for group in entry.get("Groups", []):
-                service_name = group["Keys"][0]
-                metrics = group["Metrics"]
+        for period in data.get("ResultsByTime", []):
+         usage_date = period["TimePeriod"]["Start"]
+        
+         for group in period.get("Groups", []):
+            # Keys follow the order in your 'groupBy' list: [Account, Region, Service]
+            account_id = group["Keys"][0]
+            region = group["Keys"][1]
+            service_name = group["Keys"][2]
+            
+            m = group["Metrics"]
+            
+            # Helper to safely parse metrics (default to 0.0 if missing)
+            def get_val(name): return float(m.get(name, {}).get("Amount", 0.0))
 
-                amortized_cost = float(metrics["AmortizedCost"]["Amount"])
-                blended_cost = float(metrics["BlendedCost"]["Amount"])
-                unblended_cost = float(metrics["UnblendedCost"]["Amount"])
-                usage_quantity = float(metrics["UsageQuantity"]["Amount"])
-                unit = metrics["UsageQuantity"]["Unit"]
-
-                cur.execute("""
-                    INSERT INTO aws_costs (
-                        service_name, amortized_cost, blended_cost, unblended_cost, usage_quantity, unit
-                    ) VALUES (%s, %s, %s, %s, %s, %s)
-                """, (service_name, amortized_cost, blended_cost, unblended_cost, usage_quantity, unit))
+            cur.execute("""
+                INSERT INTO aws_costs (
+                    usage_date, linked_account_id, region, service_name,
+                    amortized_cost, blended_cost, net_amortized_cost, 
+                    net_unblended_cost, normalized_usage, unblended_cost, 
+                    usage_quantity, unit
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (usage_date, linked_account_id, region, service_name) 
+                DO UPDATE SET 
+                    amortized_cost = EXCLUDED.amortized_cost,
+                    unblended_cost = EXCLUDED.unblended_cost,
+                    usage_quantity = EXCLUDED.usage_quantity;
+            """, (
+                usage_date, account_id, region, service_name,
+                get_val("AmortizedCost"), get_val("BlendedCost"), 
+                get_val("NetAmortizedCost"), get_val("NetUnblendedCost"),
+                get_val("NormalizedUsageAmount"), get_val("UnblendedCost"),
+                get_val("UsageQuantity"), m["UsageQuantity"]["Unit"]
+            ))
+#        for entry in data:
+#            for group in entry.get("Groups", []):
+#                service_name = group["Keys"][0]
+#                metrics = group["Metrics"]
+#
+#                amortized_cost = float(metrics["AmortizedCost"]["Amount"])
+#                blended_cost = float(metrics["BlendedCost"]["Amount"])
+#                unblended_cost = float(metrics["UnblendedCost"]["Amount"])
+#                usage_quantity = float(metrics["UsageQuantity"]["Amount"])
+#                unit = metrics["UsageQuantity"]["Unit"]
+#
+#                cur.execute("""
+#                    INSERT INTO aws_costs (
+#                        service_name, amortized_cost, blended_cost, unblended_cost, usage_quantity, unit
+#                    ) VALUES (%s, %s, %s, %s, %s, %s)
+#                """, (service_name, amortized_cost, blended_cost, unblended_cost, usage_quantity, unit))
+                
         conn.commit()
         cur.close()
         print("✅ Data inserted successfully!")
@@ -141,14 +179,14 @@ def cost_summary():
         "NetUnblendedCost",
         "NormalizedUsageAmount",
         "UnblendedCost",
-        "UsageQuantity"
-
+        "UsageQuantity"        
         ]
 
     groupBy = [
-        {'Type': 'DIMENSION', 'Key': 'SERVICE'}, 
-        # {'Type': 'DIMENSION', 'Key': 'REGION'}
         
+        {"Type": "DIMENSION", "Key": "LINKED_ACCOUNT"},
+        {"Type": "DIMENSION", "Key": "REGION"},
+        {"Type": 'DIMENSION', "Key": 'SERVICE'}      
         ]
 
     result = get_aws_cost_summary(time_period, metrics, groupBy)
@@ -163,10 +201,4 @@ def cost_summary():
         return json.dumps({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
-
-
-
+    app.run(debug=True, host="0.0.0.0", port=5000)
