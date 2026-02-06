@@ -1,1 +1,0 @@
-# Dckerfile for Fetcher for AWS
