@@ -29,4 +29,4 @@ COPY . .
 EXPOSE 5000
 
 # Run using Gunicorn
-CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:5000", "all_endpoint:app"]
+CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:5000", "api.all_endpoint:app"]
