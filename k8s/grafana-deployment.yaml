@@ -6,6 +6,19 @@ data:
   grafana.ini: |
     [auth.anonymous]
     enabled = true
+    org_role = Admin
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
 
 ---
 apiVersion: apps/v1
@@ -27,13 +40,19 @@ spec:
         image: grafana/grafana:latest
         ports:
         - containerPort: 3000
+        env:
+        # This is a cleaner way to apply ConfigMap settings
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: "Admin"
         volumeMounts:
-        - name: grafana-config
-          mountPath: /etc/grafana
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
       volumes:
-      - name: grafana-config
-        configMap:
-          name: grafana-config
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
 
 ---
 apiVersion: v1
