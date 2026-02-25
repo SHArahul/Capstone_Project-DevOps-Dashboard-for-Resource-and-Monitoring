@@ -9,6 +9,27 @@ __pycache__/
 # custom compiled files
 test.py
 
+# Terraform generated files and directories
+.terraform/         # Directory for provider binaries and external modules
+*.tfstate           # Terraform state file (contains infrastructure state and potentially secrets)
+*.tfstate.*         # Terraform state backup files
+
+# Variable files that may contain sensitive data
+*.tfvars            # Variable definitions file (unless managed in a secure manner and intended for sharing)
+*.tfvars.json       # JSON version of variable definitions file
+
+# Crash log files
+crash.log
+
+# Terraform CLI configuration files
+.terraformrc
+terraform.rc
+
+# Optional: Terraform plan files
+# If you save plan files, use a consistent naming convention and ignore them here
+# e.g., *.tfplan
+
+
 # Distribution / packaging
 .Python
 build/
