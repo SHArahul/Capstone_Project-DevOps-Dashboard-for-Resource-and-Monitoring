@@ -2,15 +2,27 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-secret
+  namespace: default
 type: Opaque
-data:
-  POSTGRES_PASSWORD: cG9zdGdyZXNfcGFzcw== # base64: postgres_pass
+stringData:
+  # Postgres container env vars
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "YWRtaW4="
+  POSTGRES_DB: "postgres"
+
+  # API connection env vars (psycopg2 reads these)
+  DB_HOST: "postgres-svc"        # must match service name below
+  DB_PORT: "5432"
+  DB_USER: "postgres"            # must match POSTGRES_USER
+  DB_PASSWORD: "YWRtaW4="   # must match POSTGRES_PASSWORD
+  DB_NAME: "postgres"            # must match POSTGRES_DB
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
+  namespace: default
 spec:
   accessModes:
     - ReadWriteOnce
@@ -23,6 +35,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -34,35 +47,54 @@ spec:
         app: postgres
     spec:
       containers:
-      - name: postgres
-        image: postgres:15
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
-        - name: POSTGRES_DB
-          value: "postgres"      
-        volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          name: db-storage
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: db-storage
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
       volumes:
-      - name: db-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres-svc
+  namespace: default
 spec:
   type: ClusterIP
   selector:
     app: postgres
   ports:
-  - port: 5432
-    targetPort: 5432
+    - port: 5432
+      targetPort: 5432
