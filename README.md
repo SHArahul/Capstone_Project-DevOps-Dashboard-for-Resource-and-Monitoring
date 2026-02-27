@@ -257,6 +257,10 @@ Grafana-based visualization
 
 The platform transforms raw billing data into operational cost intelligence.
 
+## Created by:
+
+Rahul Sharma | Harshwerdhan Roy | Vignesh Raja
+
 -----------------------
 
 -----------------------
