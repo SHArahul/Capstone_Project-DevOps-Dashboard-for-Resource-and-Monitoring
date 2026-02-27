@@ -239,6 +239,12 @@ kubectl get svc
 curl http://<external-ip>/aws-cost
 
 # Screenshot
+<img width="1883" height="299" alt="curl-service-python-api" src="https://github.com/user-attachments/assets/66e8129c-1f4f-4433-9db5-ab42e7f9d2ef" />  
+<img width="1512" height="460" alt="pod-exec-postgres" src="https://github.com/user-attachments/assets/889d469b-2a95-4e09-8cc0-da239c76a4b3" />  
+<img width="1907" height="886" alt="pods-deploy-secret-svc-config" src="https://github.com/user-attachments/assets/42b64229-a18d-4389-a9ad-89186734b658" />  
+
+
+
 
 
 # Conclusion
