@@ -1,6 +1,9 @@
 # Capstone_Project-DevOps-Dashboard-for-Resource-and-Monitoring
 A DevOps Project for Resource Monitoring of users
 
+# Architecture Diagram
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/f261d2f7-e4d1-4f23-9a6c-094ff92fd5b2" />
+
 ### Create `.env` file
 ```
 AWS_ACCESS_KEY_ID=''
