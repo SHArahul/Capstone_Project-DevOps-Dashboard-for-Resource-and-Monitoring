@@ -323,3 +323,152 @@ minikube start --driver=docker
 alias kubectl="minikube kubectl --"
 kubectl get po -A
 ```
+
+# Kubernetes Port Forwarding – Complete Guide
+
+## Overview
+
+This document explains how to use `kubectl port-forward` to access a Kubernetes Service from your local machine or other systems in the same network.
+
+Port forwarding creates a temporary tunnel between your local machine and a Pod or Service inside the Kubernetes cluster. It is mainly used for debugging, testing, and internal access.
+
+---
+
+## 🛠 Prerequisites
+
+Make sure the following are available:
+
+- A running Kubernetes cluster (Minikube / Kind / EKS / AKS / etc.)
+- kubectl installed and configured
+- A deployed Service named `my-service`
+
+Verify cluster connection:
+
+```bash
+kubectl get nodes
+```
+
+Verify service:
+
+```bash
+kubectl get svc
+```
+
+---
+
+## Port Forward Command
+
+```bash
+kubectl port-forward --address 0.0.0.0 service/my-service 8080:80
+```
+
+---
+
+## Command Explanation
+
+| Part | Meaning |
+|------|---------|
+| kubectl port-forward | Creates a temporary tunnel |
+| --address 0.0.0.0 | Listens on all network interfaces |
+| service/my-service | Target Kubernetes Service |
+| 8080:80 | Maps local port 8080 to service port 80 |
+
+This means:
+
+- Listen on `0.0.0.0:8080` (accessible from other machines)
+- Forward traffic to port `80` of `my-service` inside the cluster
+
+---
+
+##  Network Flow
+
+Browser  
+   ↓  
+Local Machine (0.0.0.0:8080)  
+   ↓  
+kubectl Tunnel  
+   ↓  
+Kubernetes Service (my-service:80)  
+   ↓  
+Pod  
+
+---
+
+##  Accessing the Application
+
+### From Local Machine
+
+```
+http://localhost:8080
+```
+
+### From Another Machine in Same Network
+
+Find your local IP:
+
+```bash
+ip a
+```
+
+Then access:
+
+```
+http://<your-local-ip>:8080
+```
+
+Example:
+
+```
+http://192.168.1.20:8080
+```
+
+---
+
+##  Port Forward a Pod (Optional)
+
+Instead of forwarding a Service, you can forward directly to a Pod:
+
+```bash
+kubectl port-forward pod/<pod-name> 8080:80
+```
+
+---
+
+## Security Considerations
+
+- Using `--address 0.0.0.0` exposes the port to your entire network.
+- Do NOT use this method in production.
+- For cloud VMs (e.g., AWS EC2), ensure the Security Group allows port 8080.
+- This is a temporary tunnel, not a permanent exposure.
+
+---
+
+##  Port Forward vs NodePort vs LoadBalancer
+
+| Feature | Port Forward | NodePort | LoadBalancer |
+|----------|-------------|----------|--------------|
+| Temporary | Yes | No | No |
+| Production Ready | No | Limited | Yes |
+| Requires Cloud Provider | No | No | Yes |
+| Easy Debugging | Yes | No | No |
+
+---
+
+##  Stop Port Forwarding
+
+Press:
+
+```
+CTRL + C
+```
+
+---
+
+## Best Use Cases
+
+- Debugging applications
+- Testing services locally
+- Temporary demo environments
+- Accessing internal cluster services
+
+
