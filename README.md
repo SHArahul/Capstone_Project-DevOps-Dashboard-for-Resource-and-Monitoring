@@ -243,7 +243,12 @@ curl http://<external-ip>/aws-cost
 <img width="1512" height="460" alt="pod-exec-postgres" src="https://github.com/user-attachments/assets/889d469b-2a95-4e09-8cc0-da239c76a4b3" />  
 <img width="1907" height="886" alt="pods-deploy-secret-svc-config" src="https://github.com/user-attachments/assets/42b64229-a18d-4389-a9ad-89186734b658" />  
 
+###Grafana-Dashboard
+<img width="1908" height="894" alt="Screenshot 2026-02-28 005151" src="https://github.com/user-attachments/assets/44041f59-24ac-4c41-9f3a-046d078bb1ab" />
 
+<img width="1914" height="695" alt="Screenshot 2026-03-01 111732" src="https://github.com/user-attachments/assets/b7bd7308-b286-429b-b0be-20b359b26c06" />
+
+<img width="1917" height="618" alt="Screenshot 2026-03-01 111806" src="https://github.com/user-attachments/assets/0910f332-69a5-4765-bdf2-f3c47c34fec2" />
 
 
 
@@ -454,15 +459,7 @@ kubectl port-forward pod/<pod-name> 8080:80
 
 ---
 
-##  Stop Port Forwarding
 
-Press:
-
-```
-CTRL + C
-```
-
----
 
 ## Best Use Cases
 
