@@ -222,6 +222,10 @@ python -m api.all_endpoint
 
 # Testing & Validation
 
+## For Demo point of view, minikube on EC2 is opt but EKS cluster orchestration is favoured for prod like deployment.
+
+
+
 Infrastructure Validation
 
 ```
